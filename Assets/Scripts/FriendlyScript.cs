@@ -17,6 +17,7 @@ public class FriendlyScript : MonoBehaviour {
 	GameObject attacker;
 
 	public bool isDead;
+	bool IsInFightingRange;
 
 	void Start() {
 		agent = GetComponent<NavMeshAgent> ();	
@@ -25,35 +26,79 @@ public class FriendlyScript : MonoBehaviour {
 		isDead = false;
 	}
 
+
+	void OnTriggerEnter(Collider coll) {
+		if (coll.tag == "Weapon") {
+			friendlyHealth -= 50;
+		}
+	
+	}
+
+
 	void Update() {
-		if (!hasTarget) {
-			target = FindClosestEnemy (500f);
-			if (target != null) {
-				agent.SetDestination (target.transform.position);
-				target.SendMessageUpwards ("AssignAttacker", gameObject, SendMessageOptions.DontRequireReceiver);
-			} 
-		}
-			
-		float v = agent.speed;
-		if (agent.remainingDistance > agent.stoppingDistance) {
-			RotateTowardsEnemy (target.transform);
-			friendlyAnim.SetFloat ("vertical", v);
-		} else {
-			friendlyAnim.SetFloat ("vertical", 0);
-		}
-		if (friendlyHealth <= 0f) {
+
+		if (friendlyHealth <= 0) {
 			FriendlyDeath ();
 		}
+		if (agent != null) {
+			/*If the enemy doesn't have a friendly to move to and fight:
+				Find someone new to move to and attack, or if you cant find one
+					stand still and don't animate
 
- 		if (!target.GetComponent<EnemyScript>().isDead && IsInFightingRange (target.transform)) {
-			Invoke("FriendlyPrep", 1f);
-			Invoke ("FriendlyAttack", 2f);
+			*/
 
-		} else {
-			CancelInvoke ();
-			friendlyAnim.SetBool ("leftHeld", false);
+			if (!hasTarget) {
+				target = DesignateTarget (500f);
+				if (target.GetComponent<CapsuleCollider> () != null && target.GetComponent<EnemyScript>().isDead == false) {
+					hasTarget = true;
+				} else {
+					friendlyAnim.SetFloat ("vertical", 0);
+					hasTarget = false;
+				}
+			} else {
+
+
+				if (!IsInFightingRange) {
+					if (target.GetComponent<CapsuleCollider> () == null) {
+						hasTarget = false;
+					} else {
+						agent.SetDestination (target.transform.position);
+						friendlyAnim.SetFloat ("vertical", 1f);
+					}
+					if (Vector3.Distance (gameObject.transform.position, target.transform.position) <= agent.stoppingDistance) {
+						IsInFightingRange = true;
+						friendlyAnim.SetFloat ("vertical", 0);
+					} else {
+						IsInFightingRange = false;
+						friendlyAnim.SetFloat ("vertical", 1f);
+					}
+				} else {
+					//if enemy is close enough to fight
+					//checks if enemy is close enough to fight
+					if (Vector3.Distance (gameObject.transform.position, target.transform.position) <= agent.stoppingDistance) {
+						IsInFightingRange = true;
+						friendlyAnim.SetFloat ("vertical", 0);
+					} else {
+						IsInFightingRange = false;
+						friendlyAnim.SetFloat ("vertical", 1f);
+					}
+
+					if (target.GetComponent<CapsuleCollider> () == null) {
+						CancelInvoke ();
+						hasTarget = false;
+						IsInFightingRange = false;
+						friendlyAnim.SetBool ("leftHeld", false);
+					} else {
+						Invoke ("FriendlyPrep", 1f);
+						Invoke ("FriendlyAttack", 2f);
+						friendlyAnim.SetFloat ("vertical", 0);
+					}
+
+				}
+
+
+			}
 		}
-
 	}
 
 	void FriendlyTakeDamage(float damage) {
@@ -66,7 +111,7 @@ public class FriendlyScript : MonoBehaviour {
 		transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime*agent.angularSpeed);
 	}
 
-	bool IsInFightingRange(Transform target) {
+	bool CheckIfInFightingRange(Transform target) {
 		float distance = Vector3.Distance (target.position, transform.position);
 		return distance <= agent.stoppingDistance;
 	}
@@ -90,6 +135,7 @@ public class FriendlyScript : MonoBehaviour {
 	void FriendlyDeath() {
 		Instantiate (Resources.Load ("Ragdoll") as GameObject, transform);
 		Instantiate(Resources.Load ("Sword") as GameObject, transform);
+		gameObject.tag = "Dead";
 		Destroy (gameObject.GetComponentInChildren<SkinnedMeshRenderer> ());
 		Destroy (gameObject.GetComponent<CapsuleCollider> ());
 		Destroy (weapon);
@@ -117,4 +163,20 @@ public class FriendlyScript : MonoBehaviour {
 	void AssignAttacker(GameObject _attacker) {
 		attacker = _attacker;
 	}
+
+	GameObject DesignateTarget(float searchRange) {
+		GameObject[] enemies = GameObject.FindGameObjectsWithTag ("Enemy");
+		float distance;
+		float currentDistance = searchRange;
+		GameObject target = null;
+		foreach (GameObject enemy in enemies) {
+			distance = Vector3.Distance (gameObject.transform.position, enemy.transform.position);
+			if(distance < currentDistance) {
+				currentDistance = distance;
+				target = enemy;
+			}
+		}
+		return target;
+	}
+		
 }

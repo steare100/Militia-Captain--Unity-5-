@@ -5,7 +5,7 @@ using UnityEngine;
 public class MoveScript : MonoBehaviour {
 
 	Animator anim;
-	Transform cam;
+	Camera cam;
 	Rigidbody rb;
 
 	public float speed;
@@ -19,14 +19,15 @@ public class MoveScript : MonoBehaviour {
 	public float bodyWeight;
 	public float headWeight;
 	public float clampWeight;
-	Vector3 aimPosition;
+	public Transform playerHead;
 
+	public GameObject debugLookIndic;
 	bool isSprinting;
 
 
 	void Start() {
 		anim = GetComponent<Animator> ();
-		cam = Camera.main.transform;
+		cam = Camera.main;
 		isSprinting = false;
 		rb = GetComponent<Rigidbody> ();
 	}
@@ -40,13 +41,19 @@ public class MoveScript : MonoBehaviour {
 			isSprinting = false;
 			anim.SetBool ("isSprinting", false);
 		}
-		Ray ray = new Ray (cam.position, cam.forward);
-		aimPosition = ray.GetPoint (100);
 
-		transform.LookAt (new Vector3 (aimPosition.x, 1, aimPosition.z));
+		RaycastHit hit;
+		if(Physics.Raycast(new Ray(cam.transform.position, cam.transform.forward), out hit, 50f)) {
+			
+			transform.LookAt (new Vector3(hit.point.x, hit.point.y, hit.point.z));
+		}
+
+
+
+
 
 		if (Input.GetButtonDown ("Jump")) {
-			rb.AddForce (Vector3.up * 10, ForceMode.Impulse);
+			rb.AddForce (Vector3.up * 1000, ForceMode.Impulse);
 			anim.SetTrigger ("Jump");
 		}
 
@@ -79,7 +86,7 @@ public class MoveScript : MonoBehaviour {
 			anim.SetFloat ("vertical", v);
 
 			RaycastHit hit;
-			if (Physics.Raycast (transform.position, new Vector3(0,-1,0), 5f)) {
+			if (Physics.Raycast (transform.position, new Vector3(0,-1,0), 50f)) {
 				anim.SetBool ("isGrounded", true);
 			}
 		}

@@ -19,6 +19,7 @@ public class EnemyScript : MonoBehaviour {
 
 	public bool isDead;
 	bool hasTarget;
+	bool IsInFightingRange;
 
 	void Start() {
 		enemyAnim = GetComponent<Animator> ();
@@ -28,47 +29,80 @@ public class EnemyScript : MonoBehaviour {
 
 	}
 
-	void OnCollisionEnter(Collision coll) {
+	void OnTriggerEnter(Collider coll) {
 		if (coll.gameObject.tag == "Weapon") {
-			EnemyHealth -= 10f;
+			EnemyHealth -= 50f;
 		}
+
 	}
 
 	void Update() {
-		
+		//Checking for agent to avoid errors when it gets deleted after death
+		if (EnemyHealth <= 0) {
+			EnemyDeath ();
+
+		}
 		if (agent != null) {
+			/*If the enemy doesn't have a friendly to move to and fight:
+				Find someone new to move to and attack, or if you cant find one
+					stand still and don't animate
+
+			*/
+
 			if (!hasTarget) {
-				player = DesignateTarget (500f);
-				if (agent != null) {
-					agent.SetDestination (player.transform.position);
+				player = DesignateTarget (200f);
+				if (player.GetComponent<CapsuleCollider> () != null) {
+					hasTarget = true;
+				} else {
+					enemyAnim.SetFloat ("vertical", 0);
+					hasTarget = false;
 				}
-				player.SendMessageUpwards ("AssignAttacker", gameObject, SendMessageOptions.DontRequireReceiver);
-
-			}
-
-
-			float v = agent.speed;
-
-			if (!IsInFightingRange (player.transform)) {
-				RotateTowardsPlayer (player.transform);
-				enemyAnim.SetFloat ("vertical", v);
 			} else {
-				enemyAnim.SetFloat ("vertical", 0);
-			}
-			if (EnemyHealth <= 0f) {
-				EnemyDeath ();
-			}
-		
-		}
 
-		if (IsInFightingRange (player.transform)) {
-			Invoke("EnemyPrep", 1f);
-			Invoke ("EnemyAttack", 2f);
-			return;
-		} else {
-			enemyAnim.SetBool ("leftHeld", false);
-		}
 
+				if (!IsInFightingRange) {
+					if (player.GetComponent<CapsuleCollider> () == null) {
+						hasTarget = false;
+					} else {
+						agent.SetDestination (player.transform.position);
+
+						enemyAnim.SetFloat ("vertical", 1f);
+					}
+					if (Vector3.Distance (gameObject.transform.position, player.transform.position) <= agent.stoppingDistance) {
+						IsInFightingRange = true;
+						enemyAnim.SetFloat ("vertical", 0);
+					} else {
+						IsInFightingRange = false;
+						enemyAnim.SetFloat ("vertical", 1f);
+					}
+				} else {
+					
+					//if enemy is close enough to fight
+					//checks if enemy is close enough to fight
+					if (Vector3.Distance (gameObject.transform.position, player.transform.position) <= agent.stoppingDistance) {
+						IsInFightingRange = true;
+						enemyAnim.SetFloat ("vertical", 0);
+					} else {
+						IsInFightingRange = false;
+						enemyAnim.SetFloat ("vertical", 1f);
+					}
+
+					if (player.GetComponent<CapsuleCollider> () == null) {
+						CancelInvoke ();
+						hasTarget = false;
+						IsInFightingRange = false;
+						enemyAnim.SetBool ("leftHeld", false);
+					} else {
+						Invoke ("EnemyPrep", 1f);
+						Invoke ("EnemyAttack", 2f);
+						enemyAnim.SetFloat ("vertical", 0);
+					}
+
+				}
+
+
+			}
+		}
 
 	}
 
@@ -82,7 +116,7 @@ public class EnemyScript : MonoBehaviour {
 		transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime*agent.angularSpeed);
 	}
 
-	bool IsInFightingRange(Transform target) {
+	bool CheckIfInFightingRange(Transform target) {
 		float distance = Vector3.Distance (target.position, transform.position);
 		return distance <= 6f;
 	}
@@ -96,20 +130,12 @@ public class EnemyScript : MonoBehaviour {
 		Destroy (weapon);
 		Destroy (agent);
 		isDead = true;
-		//Destroy (this);
+		Destroy (this);
 
 	}
 
 	void EnemyAttack() {
 		enemyAnim.SetTrigger ("LeftHit");
-		RaycastHit hit;
-		Debug.DrawRay (attackOrigin.transform.position, new Vector3(0f,0f,-1f), Color.green);
-		if (Physics.Raycast (attackOrigin.transform.position, new Vector3(0f,0f,-1f), out hit, 50f, LayerMask.GetMask("Friendly"))) {
-			//Debug.Log (hit.collider.gameObject.name);
-			if (hit.collider.gameObject.tag == "Friendly") {
-				hit.collider.gameObject.SendMessage ("FriendlyTakeDamage", 7f);
-			}
-		}	
 	}
 
 	void EnemyPrep() {
