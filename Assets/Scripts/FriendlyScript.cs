@@ -48,12 +48,14 @@ public class FriendlyScript : MonoBehaviour {
 			*/
 
 			if (!hasTarget) {
-				target = DesignateTarget (500f);
-				if (target.GetComponent<CapsuleCollider> () != null && target.GetComponent<EnemyScript>().isDead == false) {
+				target = DesignateTarget (20f);
+				if (target != null) {
 					hasTarget = true;
 				} else {
 					friendlyAnim.SetFloat ("vertical", 0);
 					hasTarget = false;
+					agent.SetDestination (GameObject.Find ("RedBase").transform.position);
+					friendlyAnim.SetFloat ("vertical", 1);
 				}
 			} else {
 

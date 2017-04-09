@@ -20,6 +20,7 @@ public class EnemyScript : MonoBehaviour {
 	public bool isDead;
 	bool hasTarget;
 	bool IsInFightingRange;
+	public bool isAttacking;
 
 	void Start() {
 		enemyAnim = GetComponent<Animator> ();
@@ -36,6 +37,8 @@ public class EnemyScript : MonoBehaviour {
 
 	}
 
+
+
 	void Update() {
 		//Checking for agent to avoid errors when it gets deleted after death
 		if (EnemyHealth <= 0) {
@@ -50,12 +53,14 @@ public class EnemyScript : MonoBehaviour {
 			*/
 
 			if (!hasTarget) {
-				player = DesignateTarget (200f);
-				if (player.GetComponent<CapsuleCollider> () != null) {
+				player = DesignateTarget (20f);
+				if (player != null) {
 					hasTarget = true;
 				} else {
-					enemyAnim.SetFloat ("vertical", 0);
 					hasTarget = false;
+					agent.SetDestination (GameObject.Find ("BlueBase").transform.position);
+					enemyAnim.SetFloat ("vertical", 1);
+
 				}
 			} else {
 
@@ -94,7 +99,7 @@ public class EnemyScript : MonoBehaviour {
 						enemyAnim.SetBool ("leftHeld", false);
 					} else {
 						Invoke ("EnemyPrep", 1f);
-						Invoke ("EnemyAttack", 2f);
+						Invoke ("EnemyAttack", .2f);
 						enemyAnim.SetFloat ("vertical", 0);
 					}
 
@@ -104,6 +109,11 @@ public class EnemyScript : MonoBehaviour {
 			}
 		}
 
+		if (isAttacking) {
+			weapon.tag = "Weapon";
+		} else {
+			weapon.tag = "Untagged";
+		}
 	}
 
 	void EnemyTakeDamage(float damage) {
@@ -136,10 +146,12 @@ public class EnemyScript : MonoBehaviour {
 
 	void EnemyAttack() {
 		enemyAnim.SetTrigger ("LeftHit");
+		isAttacking = false;
 	}
 
 	void EnemyPrep() {
 		enemyAnim.SetBool ("leftHeld", true);
+		isAttacking = true;
 	}
 
 	GameObject DesignateTarget(float searchRange) {

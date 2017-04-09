@@ -23,6 +23,7 @@ public class MoveScript : MonoBehaviour {
 
 	public GameObject debugLookIndic;
 	bool isSprinting;
+	bool isGrounded = true;
 
 
 	void Start() {
@@ -34,7 +35,7 @@ public class MoveScript : MonoBehaviour {
 
 
 	void Update() {
-		if (Input.GetButton ("Fire3")) {
+		if (Input.GetButton ("Fire3") && isGrounded) {
 			isSprinting = true;
 			anim.SetBool ("isSprinting", true);
 		} else {
@@ -49,12 +50,11 @@ public class MoveScript : MonoBehaviour {
 		}
 
 
-
-
-
-		if (Input.GetButtonDown ("Jump")) {
-			rb.AddForce (Vector3.up * 1000, ForceMode.Impulse);
+		if (Input.GetButtonDown ("Jump") && isGrounded) {
+			rb.AddForce (Vector3.up * 500, ForceMode.Impulse);
 			anim.SetTrigger ("Jump");
+			isGrounded = false;
+			anim.SetFloat ("vertical", 0);
 		}
 
 
@@ -65,30 +65,31 @@ public class MoveScript : MonoBehaviour {
 		float h = Input.GetAxisRaw ("Horizontal");
 		float v = Input.GetAxisRaw ("Vertical");
 
-		if (isSprinting) {
-			//should not be able to strafe while sprinting
-			//should not be able to run backwards
-			if (v < 0) {
-				v = 0;
-			}
-			transform.Translate (0, 0, v * speed*3);
+			if (isSprinting) {
+				//should not be able to strafe while sprinting
+				//should not be able to run backwards
+				if (v < 0) {
+					v = 0;
+				}
+				transform.Translate (0, 0, v * speed*3);
 
-		} else {
-			//Not sprinting. 
-			//Should be able to strafe, 
-			//If walking diagonally, speed needs to be capped at 1, instead of ~1.4 since moving in both axes
-			if (h != 0 && v != 0) {
-				transform.Translate (h * speed * 1 / 4, 0, v * speed * 1 / 4);
 			} else {
-				transform.Translate (h*speed, 0, v*speed);
-			}
-			anim.SetFloat ("horizontal", h);
-			anim.SetFloat ("vertical", v);
+				//Not sprinting. 
+				//Should be able to strafe, 
+				//If walking diagonally, speed needs to be capped at 1, instead of ~1.4 since moving in both axes
+				if (h != 0 && v != 0) {
+					transform.Translate (h * speed * 1 / 4, 0, v * speed * 1 / 4);
+				} else {
+					transform.Translate (h*speed, 0, v*speed);
+				}
+				anim.SetFloat ("horizontal", h);
+				anim.SetFloat ("vertical", v);
 
-			RaycastHit hit;
-			if (Physics.Raycast (transform.position, new Vector3(0,-1,0), 50f)) {
-				anim.SetBool ("isGrounded", true);
-			}
+				RaycastHit hit;
+				if(Physics.Raycast(gameObject.transform.position, Vector3.down, out hit, .008f, LayerMask.GetMask("Environment"))) {
+					anim.SetBool ("isGrounded", true);
+					isGrounded = true;
+				}
 		}
 	}
 

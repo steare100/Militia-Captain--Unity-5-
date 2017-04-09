@@ -6,9 +6,20 @@ public class CombatScript : MonoBehaviour {
 
 	Animator anim;
 	public GameObject playerAttackOrigin;
+	public float playerHealth;
+	public GameObject weaponOne;
+	public GameObject weaponTwo;
 
 	void Start() {
 		anim = GetComponent<Animator> ();
+	}
+
+	void OnTriggerEnter(Collider coll) {
+		if (coll.tag == "Weapon") {
+			playerHealth -= 50f;
+			anim.SetTrigger ("GetHit");
+			Debug.Log ("Player has taken damage");
+		}
 	}
 
 	void Update() {
@@ -29,5 +40,18 @@ public class CombatScript : MonoBehaviour {
 			anim.SetBool ("leftHeld", false);
 			anim.SetTrigger ("LeftHit");
 		}
+
+		if (playerHealth <= 0) {
+			PlayerDeath ();
+		}
+	}
+
+	void PlayerDeath() {
+		Destroy (gameObject.GetComponentInChildren<SkinnedMeshRenderer> ());
+		Instantiate (Resources.Load ("Ragdoll"), transform.position, Quaternion.identity);
+		Destroy (gameObject.GetComponent<Rigidbody> ());
+		Destroy (weaponOne);
+		Destroy (weaponTwo);
+		Destroy (this);
 	}
 }
