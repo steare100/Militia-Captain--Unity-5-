@@ -18,8 +18,10 @@ public class FriendlyScript : MonoBehaviour {
 
 	public bool isDead;
 	bool IsInFightingRange;
+	public bool isAttacking;
 
 	void Start() {
+		weapon.tag = "Untagged";
 		agent = GetComponent<NavMeshAgent> ();	
 		friendlyAnim = GetComponent<Animator> ();
 		rb = GetComponent<Rigidbody> ();
@@ -36,9 +38,10 @@ public class FriendlyScript : MonoBehaviour {
 
 
 	void Update() {
-
+		//Checking for agent to avoid errors when it gets deleted after death
 		if (friendlyHealth <= 0) {
 			FriendlyDeath ();
+
 		}
 		if (agent != null) {
 			/*If the enemy doesn't have a friendly to move to and fight:
@@ -52,10 +55,11 @@ public class FriendlyScript : MonoBehaviour {
 				if (target != null) {
 					hasTarget = true;
 				} else {
-					friendlyAnim.SetFloat ("vertical", 0);
 					hasTarget = false;
-					agent.SetDestination (GameObject.Find ("RedBase").transform.position);
+					agent.SetDestination (GameObject.FindGameObjectWithTag ("RedBase").transform.position);
+
 					friendlyAnim.SetFloat ("vertical", 1);
+
 				}
 			} else {
 
@@ -65,6 +69,7 @@ public class FriendlyScript : MonoBehaviour {
 						hasTarget = false;
 					} else {
 						agent.SetDestination (target.transform.position);
+
 						friendlyAnim.SetFloat ("vertical", 1f);
 					}
 					if (Vector3.Distance (gameObject.transform.position, target.transform.position) <= agent.stoppingDistance) {
@@ -75,6 +80,7 @@ public class FriendlyScript : MonoBehaviour {
 						friendlyAnim.SetFloat ("vertical", 1f);
 					}
 				} else {
+
 					//if enemy is close enough to fight
 					//checks if enemy is close enough to fight
 					if (Vector3.Distance (gameObject.transform.position, target.transform.position) <= agent.stoppingDistance) {
@@ -92,7 +98,7 @@ public class FriendlyScript : MonoBehaviour {
 						friendlyAnim.SetBool ("leftHeld", false);
 					} else {
 						Invoke ("FriendlyPrep", 1f);
-						Invoke ("FriendlyAttack", 2f);
+						Invoke ("FriendlyAttack", .2f);
 						friendlyAnim.SetFloat ("vertical", 0);
 					}
 
@@ -100,6 +106,12 @@ public class FriendlyScript : MonoBehaviour {
 
 
 			}
+		}
+
+		if (isAttacking) {
+			weapon.tag = "Weapon";
+		} else {
+			weapon.tag = "Untagged";
 		}
 	}
 
@@ -148,18 +160,12 @@ public class FriendlyScript : MonoBehaviour {
 
 	void FriendlyAttack() {
 		friendlyAnim.SetTrigger ("LeftHit");
-		RaycastHit hit;
-		//Debug.DrawRay (attackOrigin.transform.position, new Vector3(0f,0f,1f), Color.green);
-		if (Physics.Raycast (attackOrigin.transform.position, new Vector3(0f,0f,1f), out hit, 50f, LayerMask.GetMask("Enemy"))) {
-			//Debug.Log (hit.collider.gameObject.name);
-			if (hit.collider.gameObject.tag == "Enemy") {
-				hit.collider.gameObject.SendMessage ("EnemyTakeDamage", 7f);
-			}
-		}
+		isAttacking = false;
 	}
 
 	void FriendlyPrep() {
 		friendlyAnim.SetBool ("leftHeld", true);
+		isAttacking = true;
 	}
 
 	void AssignAttacker(GameObject _attacker) {

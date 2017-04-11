@@ -9,6 +9,8 @@ public class CombatScript : MonoBehaviour {
 	public float playerHealth;
 	public GameObject weaponOne;
 	public GameObject weaponTwo;
+	public Transform spawnPoint;
+	public GameObject previousCam;
 
 	void Start() {
 		anim = GetComponent<Animator> ();
@@ -34,6 +36,7 @@ public class CombatScript : MonoBehaviour {
 
 		if (Input.GetButton ("Fire1")) {
 			anim.SetBool ("leftHeld", true);
+
 		} 
 
 		if (Input.GetButtonUp ("Fire1")) {
@@ -46,12 +49,24 @@ public class CombatScript : MonoBehaviour {
 		}
 	}
 
+	void PlayerRespawn() {
+		GameObject newPlayer = Instantiate (Resources.Load ("Player"), GameObject.Find ("BlueBase").transform.position, Quaternion.identity) as GameObject;
+		GameObject cam = GameObject.FindGameObjectWithTag("CameraHolder");
+		cam.GetComponent<FreeCameraLook> ().SetTarget (newPlayer.transform);
+		//Destroy (gameObject);
+		Destroy (this);
+
+
+	}
+
 	void PlayerDeath() {
 		Destroy (gameObject.GetComponentInChildren<SkinnedMeshRenderer> ());
 		Instantiate (Resources.Load ("Ragdoll"), transform.position, Quaternion.identity);
 		Destroy (gameObject.GetComponent<Rigidbody> ());
 		Destroy (weaponOne);
 		Destroy (weaponTwo);
-		Destroy (this);
+		playerHealth = 250f;
+		Invoke ("PlayerRespawn", 5f);
+
 	}
 }

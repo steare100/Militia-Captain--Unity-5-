@@ -23,6 +23,7 @@ public class EnemyScript : MonoBehaviour {
 	public bool isAttacking;
 
 	void Start() {
+		weapon.tag = "Untagged";
 		enemyAnim = GetComponent<Animator> ();
 		rb = GetComponent<Rigidbody> ();
 		agent = GetComponent<NavMeshAgent> ();
@@ -58,7 +59,7 @@ public class EnemyScript : MonoBehaviour {
 					hasTarget = true;
 				} else {
 					hasTarget = false;
-					agent.SetDestination (GameObject.Find ("BlueBase").transform.position);
+					agent.SetDestination (GameObject.FindGameObjectWithTag ("BlueBase").transform.position);
 					enemyAnim.SetFloat ("vertical", 1);
 
 				}
@@ -135,11 +136,11 @@ public class EnemyScript : MonoBehaviour {
 	void EnemyDeath() {
 		Instantiate (Resources.Load ("Ragdoll") as GameObject, transform);
 		Instantiate(Resources.Load ("Sword") as GameObject, transform);
+		gameObject.tag = "Dead";
 		Destroy (gameObject.GetComponentInChildren<SkinnedMeshRenderer> ());
 		Destroy (gameObject.GetComponent<CapsuleCollider> ());
 		Destroy (weapon);
 		Destroy (agent);
-		isDead = true;
 		Destroy (this);
 
 	}
